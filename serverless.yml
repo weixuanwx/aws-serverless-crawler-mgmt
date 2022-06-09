@@ -1,0 +1,71 @@
+service: aws-serverless-crawler-mgmt
+
+provider:
+  name: aws
+  region: ap-southeast-1
+  runtime: python3.8
+  logRetentionInDays: 3
+  lambdaHashingVersion: 20201221
+
+  environment:
+    FEED_BUCKET_NAME: !Ref CrawlerFeedBucket
+    ECS_CLUSTER: !GetAtt FargateECSCluster.Arn
+    ECS_TASK_ARN: !Ref FargateECSTaskDefinition
+    ECS_SUBNET: !Ref FargateSubnet
+    ECS_SEC_GROUP: !Ref FargateSG
+    CONTAINER_NAME: "crawler_container"
+    S3_OUTPUT_FOLDER_PATH: "companies/"
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource: !Sub
+        - "arn:aws:s3:::#{BucketName}/*"
+        - BucketName: !Ref CrawlerFeedBucket
+
+    - Effect: Allow
+      Action:
+        - ecs:RunTask
+      Resource:
+        - !Ref FargateECSTaskDefinition
+    - Effect: Allow
+      Action:
+        - iam:PassRole
+      Resource:
+        - !GetAtt FargateExecutionRole.Arn
+    - Effect: Allow
+      Action:
+        - iam:PassRole
+      Resource:
+        - !GetAtt FargateTaskRole.Arn
+
+functions:
+  fargateCrawlerCheck:
+    handler: launch_fargate.test
+  fargateCrawler:
+    handler: launch_fargate.launch_fargate
+
+# We include files by whitelisting to reduce the deployment time.
+# Just remember to add any files you create!
+package:
+  include:
+    - launch_fargate.py
+    - lambda-launcher/**
+  exclude:
+    - "./**"
+
+resources:
+  - AWSTemplateFormatVersion: "2010-09-09"
+    Transform: "AWS::Serverless-2016-10-31"
+  - ${file(./s3-template.yml)}
+  - ${file(./fargate-template.yml)}
+
+plugins:
+  - serverless-python-requirements
+  - serverless-cloudformation-sub-variables
+custom:
+  pythonRequirements:
+    slim: true # Omits tests, __pycache__, *.pyc etc from dependencies
+    dockerizePip: "false"
+    fileName: requirements.txt
