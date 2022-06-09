@@ -76,9 +76,9 @@ PROFILE="YOUR_AWS_PROFILE_NAME"
 IMAGE_NAME="YOUR_DOCKER_ACCT_NAME/aws_fargate_crawler"
 ```
 
-`make build`
-`aws ecr get-login-password --region <REGION> --profile <PROFILE> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com`
-`make retag`
+- `make build`
+- `aws ecr get-login-password --region <REGION> --profile <PROFILE> | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com`
+- `make retag`
 
 ### Checking Docker container locally
 _Only if you have run `sls deploy` before_
